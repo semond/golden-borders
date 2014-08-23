@@ -6,7 +6,7 @@ wy = 6
 
 def test(wx_value, wy_value):
     rphi = (1 + _root(5, 2)) / 2
-    wx, wy, b, phi, bottom = symbols('wx,wy,b,phi, bottom')
+    wx, wy, b, phi, bottom = symbols('wx,wy,b,phi,bottom')
 
     f = 6 * b ** 3 \
         + (7 * wx + 2 * wy) * b ** 2 \

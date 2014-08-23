@@ -1,0 +1,13 @@
+{
+	"folders":
+	[
+		{
+			"follow_symlinks": true,
+			"path": ".",
+            "file_exclude_patterns": [
+                "*.pyc",
+                "*.aux", "*.auxlock", "*.fdb_latexmk", "*.log", "*.ilg", "*.ind", "*.gz", "*.toc", "*.idx", "*.fls"
+            ]
+		}
+	]
+}

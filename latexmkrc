@@ -1,7 +1,3 @@
-#$latex  = 'uplatex -src-specials -interaction=nonstopmode -synctex=1';
-#$pdflatex = 'lualatex --interaction=nonstopmode --shell-escape --synctex=1';
-#$pdflatex = 'lualatex --interaction=nonstopmode --shell-escape --synctex=1';
-
 $latex="lualatex --interaction=nonstopmode --shell-escape --enable-write18 --synctex=1 %O %S";
 $pdflatex="lualatex --interaction=nonstopmode --shell-escape --enable-write18 --synctex=1 %O %S";
 $pdf_mode = 1;

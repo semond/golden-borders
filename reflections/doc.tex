@@ -3,8 +3,7 @@
     paper=letter,
     parskip=half-,
     DIV=10,
-    % draft
-]{scrartcl}
+]{scrreprt}
 
 % WTF? UTF-8 is ignored without this!?? Should be the default on lualatex.
 \usepackage[utf8]{luainputenc}
@@ -23,7 +22,14 @@
 \usemintedstyle{friendly}
 
 \begin{document}
-    \section{Introduction}
+
+\subject{Reflection}
+\title{Computing optimal borders for a print} \subtitle{Optimal for myself!}
+\author{Serge Émond}
+\date{23th August 2014}
+\maketitle
+
+\chapter{Introduction}
 
     I want to print some of my photos, and to frame them using a simple mat (no framing).
 
@@ -49,7 +55,7 @@
         \item compute the 4 borders so that the top equals the side borders, and the bottom is bigger accorging to the most common vertical centering rules.
     \end{itemize}
 
-    \section{Optical centering}
+\chapter{Optical centering}
 
     To center the print window on a mat, the most common technique (actually the only one I found aside “move the picture a big higher”) is:
 
@@ -142,15 +148,14 @@
 
     Let the golden ratio be $\phi$, because I don’t intend on typing “golden ratio” more than I have to.
 
-    What I want is to set the mat’s surface as $\phi w_x w_y$. That means:
+    I want the mat's surface to be $\phi$ the mat window's surface:
 
-    \newcommand{\sphi}{\sqrt{\phi}}
-    \begin{align*}
-        m_x &= \sphi w_x \\
-        m_y &= \sphi w_y
-    \end{align*}
+    \begin{equation*}
+        m_x m_y = \phi w_x w_y
+    \end{equation*}
 
-\section{Finding the border sizes}
+
+\chapter{Finding the border sizes}
 
     From a bit of trigonometry, we have
     \begin{align}
@@ -176,7 +181,7 @@
     \end{equation}
 
 
-\section{Implementing}
+\chapter{Implementing}
 
 Solving symbolically is not really practical, producing way too much complexity for not much.
 
@@ -212,7 +217,7 @@ sympy                & $1.259345698$s    & 0.956913776241981   & 1.0488784146570
 \end{table}
 
 
-\section{Examples}
+\chapter{Examples}
 
 Using \texttt{mpmath} with the python code from figure \ref{code:solver1}, for a 9x6 print size, we obtain:
 
