@@ -82,7 +82,7 @@ def compute_border_sizes(dims, phi, mat=False):
         ]
         A = lambda b: b * b / (x + b)
 
-    roots = mp.polyroots(coeffs, 15)
+    roots = mp.polyroots(coeffs, 50)
     roots = [root for root in roots if mp.im(root) == mp.mpf(0)]
 
     # If multiple solutions, keep the one with smalest borders first
