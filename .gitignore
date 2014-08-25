@@ -20,3 +20,8 @@
 *.fls
 *.out
 
+*.egg-info
+*.egg
+virtual/
+dist/
+build/
