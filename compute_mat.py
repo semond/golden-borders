@@ -16,8 +16,7 @@ It's also possible to compute the print size from a desired mat
 size.
 
 :copyright: © 2014, Serge Émond
-:license: not specified
-
+:license: BSD 3-Clause, http://opensource.org/licenses/BSD-3-Clause
 """
 
 from __future__ import absolute_import, print_function, \
@@ -46,6 +45,16 @@ _dim_pair_re = re.compile(r'(?P<w>[0-9.]+)(?P<sep>x|X|,|:|-)(?P<h>[0-9.]+)' + _p
 PHI = (1 + mp.sqrt(5)) / 2
 
 
+def compute_bottom_border(b, dims, mat=False):
+    """Compute the bottom border for a given border size"""
+    x, y = dims
+    if mat:
+        A = lambda b: b * b / (x - b)
+    else:
+        A = lambda b: b * b / (x + b)
+    return b + A(b)
+
+
 def compute_border_sizes(dims, phi, mat=False):
     """Compute optimal border sizes for a mat window mesuring dims[0] x dims[1].
 
@@ -62,7 +71,7 @@ def compute_border_sizes(dims, phi, mat=False):
     Passing `mat=True` causes the computation to be reversed: the borders
     are computed from a mat size.
     """
-    x, y = dims[0], dims[1]
+    x, y = dims
     if mat:
         # dims are mat's dims
         coeffs = [
@@ -139,10 +148,12 @@ def parse_dim(dstr, default_units=None):
     return to_mm(dim, units)
 
 
-def parse_dim_pair(dstr, default_units=None):
+def parse_dim_pair(dstr, default_units=None, allow_single=False):
     """Parse a string representing a pair of dimensions, to mm"""
     m = _dim_pair_re.match(dstr)
     if not m:
+        v = parse_dim(dstr)
+        return v, v
         click.echo("ERROR: Can't parse dimension pair {!r}".format(dstr), err=True)
         return None
 
@@ -178,27 +189,82 @@ def dim_pair_str(dims, units):
 
 @click.command()
 @click.argument('print-dims')
-@click.option('--overlap', default='0', help="Overlap of mat's window over the print")
-@click.option('--units', default='mm', help="Default unit, also used for output")
-@click.option('--paper', default='0x0', help="Dims of the paper of the print, assumed to be centered")
-@click.option('--phi', default='phi', help="PHI to use: phi, phi-square")
-@click.option('--mat/--print', default=False, help='PRINT_DIMS are mat/print size, default print')
-def main(print_dims, overlap, units, paper, phi, mat):
-    """Compute something.
+@click.option('--units', default='mm',
+              help="Default unit, also used for output")
+@click.option('--mat/--print', default=False,
+              help='PRINT_DIMS are mat/print size, default print')
+@click.option('--paper', default='0x0',
+              help="Dims of the paper of the print, assumed to be centered")
+@click.option('--overlap', default='0',
+              help="Overlap of mat's window over the print (pair or single)")
+@click.option('--factor', default=None,
+              help="Factor to use (mat area = factor * window area)")
+@click.option('--exp', default=None,
+              help="Exponent to use for the factor")
+@click.option('--border', default=None,
+              help="Use fixed border size of this value, compute bottom")
+def main(print_dims, overlap, units, paper, factor, exp, mat, border=None):
+    """Compute mat/window size so my prints look good.
 
-    Dimensions can be passed using a simple [<width><sep><height><units>]
-    structure, where:
+    Given a print's size, compute the required mat dimensions.
+    Given a mat's size, compute the required print dimensions.
 
-        <sep> can be 'x', ',' or ':'
+    \b
+    The final border is computed so that:
+        - the bottom border is bigger, to compensate for the illusion
+          of the print "sinking in" the border
+        - the other three borders are equal
+        - the mat's area is a factor of the print's size
+          (e.g.  mat surface = factor^exp * window size)
 
-        <width> and <height> are numbers, possibly floats (like 1.8)
+    \b
+    The default factor is the (Golden Ratio)^(3/2).
+        (e.g. --factor=golden, --exp=1.5)
 
-        <units> is optional and may be mm, cm, dm, in, ft
+    The border can also have a fixed dimension, in which case only the
+    bottom border is still computed.
 
-    Example: 9x6in
+    An *overlap* can be given, representing the mat's window overlapping
+    the print to make sure the print is completely covered.
 
-    A single dimension can be written as [<dim><unit>]. If <unit> is
-    unspecified, it is assumed to be the same as the print size.
+    This overlap may be a single dimension, or given as a dimension pair.
+
+    \b
+    A single dimension is given as <number><optional unit>.
+    A dimension pair is given as <width><sep><height><optional unit>.
+
+    `sep` may be 'x', ':', ','.
+
+    The optional unit may be `mm`, `cm`, `dm`, `in`, `ft`.
+
+    When not specified, the unit is the default unit (parameter --unit).
+    The default unit is `mm`.
+
+    A paper size can also be given, which allows for the computation of
+    the position of the paper on the mat.
+
+    \b
+    +--------------------------------------+  ----------------
+    |             Border top (b)           |                ^
+    |   +------------------------------+   |  ----------    |
+    |   |              Oh              |   |          ^     |
+    |   |  +------------------------+  |   |  ---     |     |
+    |   |  |                        |  |   |   ^      | P   |
+    |   |Ow|         Window         |Ow|   |   |Win-  | r   | M
+    |   |  |                        |  |   |   |dow   | i   | a
+    | b |  |                        |  | b |   v      | n   | t
+    |   |  +------------------------+  |   |  ---     | t   |
+    |   |              Oh              |   |          v     |
+    |   +------------------------------+   |  ----------    |
+    |                                      |                |
+    |            Border bottom             |                v
+    +--------------------------------------+  ----------------
+
+    \b
+    Ow = overlap in width
+    Oh = overlap in height
+    If Ow = Oh = 0, the window's size equals the print's size
+
     """
     default_units = units if units in POSSIBLE_UNITS else 'mm'
     if units and units not in POSSIBLE_UNITS:
@@ -206,29 +272,47 @@ def main(print_dims, overlap, units, paper, phi, mat):
             "ERROR: Unknown units, {!r}, defaulting to mm"
             .format(units), err=True)
 
-    overlap = parse_dim(overlap, default_units=default_units)
+    overlap_dims = parse_dim_pair(overlap, default_units=default_units, allow_single=True)
     print_dims = parse_dim_pair(print_dims, default_units=default_units)
     paper_dims = parse_dim_pair(paper, default_units=default_units)
-    phi_value = mp.power(PHI, 2) if phi == 'phi-square' else PHI
+    if not factor or factor in ('phi', 'gold', 'golden', 'golden-ratio'):
+        factor = PHI
+        if not exp:
+            exp = '1.5'
+    else:
+        factor = mp.mpf(factor)
+    if exp:
+        factor = mp.power(factor, mp.mpf(exp))
+
+    if border is not None:
+        border_dim = parse_dim(border, default_units=default_units)
+    else:
+        border_dim = None
 
     if mat:
         # print is mat, compute window and print sizes
         mat_dims = print_dims
 
-        b, b_bottom = compute_border_sizes(mat_dims, phi_value, mat=True)
+        if border_dim:
+            b, b_bottom = border_dim, compute_bottom_border(border_dim, mat_dims, mat=True)
+        else:
+            b, b_bottom = compute_border_sizes(mat_dims, factor, mat=True)
 
         window_dims = (
             mat_dims[0] - 2 * b,
             mat_dims[1] - b - b_bottom,
         )
 
-        print_dims = [dim + overlap * 2 for dim in window_dims]
+        print_dims = [dim[0] + dim[1] * 2 for dim in zip(window_dims, overlap_dims)]
 
     else:
         # print is print, compute mat and window sizes
-        window_dims = [dim - overlap * 2 for dim in print_dims]
+        window_dims = [dim[0] - dim[1] * 2 for dim in zip(print_dims, overlap_dims)]
 
-        b, b_bottom = compute_border_sizes(window_dims, phi_value, mat=False)
+        if border_dim:
+            b, b_bottom = border_dim, compute_bottom_border(border_dim, window_dims, mat=False)
+        else:
+            b, b_bottom = compute_border_sizes(window_dims, factor, mat=False)
 
         mat_dims = (
             window_dims[0] + 2 * b,
@@ -238,15 +322,9 @@ def main(print_dims, overlap, units, paper, phi, mat):
     if paper_dims[0] < print_dims[0] or paper_dims[1] < print_dims[1]:
         paper_dims = [dim for dim in print_dims]
 
-    paper_borders = (
-        (paper_dims[0] - print_dims[0]) / 2,
-        (paper_dims[1] - print_dims[1]) / 2,
-    )
+    paper_borders = [(dim[0] - dim[1]) / 2 for dim in zip(paper_dims, print_dims)]
 
-    paper_shift = (
-        b - overlap - paper_borders[0],
-        b - overlap - paper_borders[1],
-    )
+    paper_shift = [b - dim[1] - dim[0] for dim in zip(paper_borders, overlap_dims)]
 
     print('== Parameters ============================================')
     print(
@@ -257,7 +335,7 @@ def main(print_dims, overlap, units, paper, phi, mat):
         .format(
             print=dim_pair_str(print_dims, units),
             paper=dim_pair_str(paper_dims, units),
-            overlap=dim_str(overlap, units),
+            overlap=dim_pair_str(overlap_dims, units),
             win=dim_pair_str(window_dims, units),
         ))
 
