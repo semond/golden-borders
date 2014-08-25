@@ -34,13 +34,13 @@ def version_from_git():
 
 
 setup_opts = dict(
-    name='compute-print-borders',
+    name='golden-borders',
     version=version_from_git(),
     author=u'Serge Émond',
     author_email='serge@sergeemond.com',
     zip_safe=True,
-    packages=['compute_print_borders'],
-    url='https://bitbucket.org/greyw/compute-print-border',
+    packages=['golden_borders'],
+    url='https://bitbucket.org/greyw/golden-borders',
     description="Compute the mat size and borders so the window is optically"
     "and the area follows the golden ratio",
     classifiers=[
@@ -55,7 +55,7 @@ setup_opts = dict(
     ],
     entry_points="""
     [console_scripts]
-    compute-borders=compute_print_borders:main
+    golden-borders=golden_borders:main
     """,
     )
 

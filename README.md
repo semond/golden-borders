@@ -42,13 +42,13 @@ See a [small document I made about this](reflections/doc.pdf) to organize my tho
 
 ## Installation
 
-    pip install compute-print-borders
+    pip install golden-borders
 
 ## Usage
 
-`compute-borders` takes these arguments:
+`golden-borders` takes these arguments:
 
-    compute-borders [OPTIONS] PRINT_DIMS
+    golden-borders [OPTIONS] PRINT_DIMS
 
 where `PRINT_DIMS` is a dimension pair representing either the size of the *mat*, or the size of the *print* (default = print).
 
