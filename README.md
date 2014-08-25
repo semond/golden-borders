@@ -38,7 +38,7 @@ Personnally, what I do is to compute the *surface* of the mat using the *surface
 1. top, left and right borders of equal size
 2. bottom border bigger to "optically center" the print
 
-See a [small document I made about this](reflections/doc.pdf) to organize my thoughts.
+See a [small document I made about this](https://bitbucket.org/greyw/golden-borders/raw/master/reflections/doc.pdf) to organize my thoughts.
 
 ## Installation
 
