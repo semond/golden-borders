@@ -25,3 +25,6 @@
 virtual/
 dist/
 build/
+.eggs/
+.venv/
+.vscode/

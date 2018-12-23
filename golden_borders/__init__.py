@@ -15,44 +15,38 @@ any multiplicator to that.
 It's also possible to compute the print size from a desired mat
 size.
 
-:copyright: © 2014, Serge Émond
+:copyright: (c) 2019, Serge Émond
 :license: BSD 3-Clause, http://opensource.org/licenses/BSD-3-Clause
 """
 
-from __future__ import absolute_import, print_function, \
-        unicode_literals, division
+import re
 
 import click
-import re
+
 from mpmath import mp
+
 mp.dps = 15
 
 # Precision to use when printing dimensions
-PRECS = {
-    'mm': 1,
-    'cm': 2,
-    'dm': 3,
-    'm': 4,
-    'in': 2,
-    'ft': 4,
-}
-POSSIBLE_UNITS = ['mm', 'cm', 'dm', 'm', 'in', 'ft']
-_punits = '(?P<u>' + '|'.join(POSSIBLE_UNITS) + ')?$'
-_dim_re = re.compile(r'(?P<v>[0-9.-]+)' + _punits)
-_dim_pair_re = re.compile(r'(?P<w>[0-9.]+)(?P<sep>x|X|,|:|-)(?P<h>[0-9.]+)' + _punits)
+PRECS = {"mm": 1, "cm": 2, "dm": 3, "m": 4, "in": 2, "ft": 4}
+POSSIBLE_UNITS = ["mm", "cm", "dm", "m", "in", "ft"]
+_punits = "(?P<u>" + "|".join(POSSIBLE_UNITS) + ")?$"
+_dim_re = re.compile(r"(?P<v>[0-9.-]+)" + _punits)
+_dim_pair_re = re.compile(r"(?P<w>[0-9.]+)(?P<sep>x|X|,|:|-)(?P<h>[0-9.]+)" + _punits)
 
 # The Golden Ratio
 PHI = (1 + mp.sqrt(5)) / 2
 
 
+def _A(b, x, mat):
+    bp = -b if mat else b
+    return b * b / (x + bp)
+
+
 def compute_bottom_border(b, dims, mat=False):
-    """Compute the bottom border for a given border size"""
+    """Compute the bottom border for a given border size."""
     x, y = dims
-    if mat:
-        A = lambda b: b * b / (x - b)
-    else:
-        A = lambda b: b * b / (x + b)
-    return b + A(b)
+    return b + _A(b, x, mat)
 
 
 def compute_border_sizes(dims, phi, mat=False):
@@ -80,16 +74,14 @@ def compute_border_sizes(dims, phi, mat=False):
             -2 * x * x * phi - 3 * x * y * phi + x * y,
             x * x * y * (phi - 1),
         ]
-        A = lambda b: b * b / (x - b)
     else:
         # dims are window's dims
         coeffs = [
             6,
             7 * x + 2 * y,
-            x * ((3 - phi)*y + 2*x),
-            (1 - phi) * mp.power(x, 2) * y
+            x * ((3 - phi) * y + 2 * x),
+            (1 - phi) * mp.power(x, 2) * y,
         ]
-        A = lambda b: b * b / (x + b)
 
     roots = mp.polyroots(coeffs, 50)
     roots = [root for root in roots if mp.im(root) == mp.mpf(0)]
@@ -98,7 +90,7 @@ def compute_border_sizes(dims, phi, mat=False):
     roots.sort()
     sols = [
         # (root, root + mp.power(root, 2) / (x + root))
-        (root, root + A(root))
+        (root, root + _A(root, x, mat))
         for root in roots
     ]
 
@@ -112,19 +104,20 @@ def compute_border_sizes(dims, phi, mat=False):
 
 
 def to_mm(dim, units=None, inverse=False):
+    """Convert to millimeters."""
     dim = mp.mpf(dim)
-    if units == 'cm':
+    if units == "cm":
         mult = mp.mpf(10)
-    elif units == 'dm':
+    elif units == "dm":
         mult = mp.mpf(100)
-    elif units == 'm':
+    elif units == "m":
         mult = mp.mpf(1000)
-    elif units == 'in':
-        mult = mp.mpf('25.4')
-    elif units == 'ft':
-        mult = mp.mpf('304.8')
+    elif units == "in":
+        mult = mp.mpf("25.4")
+    elif units == "ft":
+        mult = mp.mpf("304.8")
     else:
-        mult = mp.mpf('1')
+        mult = mp.mpf("1")
 
     if inverse:
         # convert *from* mm
@@ -133,14 +126,14 @@ def to_mm(dim, units=None, inverse=False):
 
 
 def parse_dim(dstr, default_units=None):
-    """Parse a string dimension to mm"""
+    """Parse a string dimension to mm."""
     m = _dim_re.match(dstr)
     if not m:
         click.echo("ERROR: Can't parse dimension {!r}".format(dstr), err=True)
         return None
 
-    units = m.group('u')
-    dim = m.group('v')
+    units = m.group("u")
+    dim = m.group("v")
 
     if not units:
         units = default_units
@@ -149,7 +142,7 @@ def parse_dim(dstr, default_units=None):
 
 
 def parse_dim_pair(dstr, default_units=None, allow_single=False):
-    """Parse a string representing a pair of dimensions, to mm"""
+    """Parse a string representing a pair of dimensions, to mm."""
     m = _dim_pair_re.match(dstr)
     if not m:
         v = parse_dim(dstr)
@@ -157,9 +150,9 @@ def parse_dim_pair(dstr, default_units=None, allow_single=False):
         click.echo("ERROR: Can't parse dimension pair {!r}".format(dstr), err=True)
         return None
 
-    units = m.group('u')
-    width = m.group('w')
-    height = m.group('h')
+    units = m.group("u")
+    width = m.group("w")
+    height = m.group("h")
 
     if not units:
         units = default_units
@@ -168,41 +161,49 @@ def parse_dim_pair(dstr, default_units=None, allow_single=False):
 
 
 def dim_str(dim, units):
-    """Format a dimension to a given unit"""
+    """Format a dimension to a given unit."""
     dim = to_mm(dim, units, True)
-    prefix = ''
-    if units == 'ft':
+    prefix = ""
+    if units == "ft":
         if dim >= mp.mpf(1):
             prefix = str(int(mp.floor(dim))) + "'"
-        units = 'in'
+        units = "in"
         dim = mp.frac(dim) * 12
     dim = prefix + ("{:." + str(PRECS[units]) + "f}").format(float(mp.nstr(dim)))
-    if units == 'in':
+    if units == "in":
         return dim + '"'
 
-    return dim + ' ' + units
+    return dim + " " + units
 
 
 def dim_pair_str(dims, units):
-    return '{} x {}'.format(dim_str(dims[0], units), dim_str(dims[1], units))
+    """Generate a dimension pair string."""
+    return "{} x {}".format(dim_str(dims[0], units), dim_str(dims[1], units))
 
 
 @click.command()
-@click.argument('print-dims')
-@click.option('--units', default='mm',
-              help="Default unit, also used for output")
-@click.option('--mat/--print', default=False,
-              help='PRINT_DIMS are mat/print size, default print')
-@click.option('--paper', default='0x0',
-              help="Dims of the paper of the print, assumed to be centered")
-@click.option('--overlap', default='0',
-              help="Overlap of mat's window over the print (pair or single)")
-@click.option('--factor', default=None,
-              help="Factor to use (mat area = factor * window area)")
-@click.option('--exp', default=None,
-              help="Exponent to use for the factor")
-@click.option('--border', default=None,
-              help="Use fixed border size of this value, compute bottom")
+@click.argument("print-dims")
+@click.option("--units", default="mm", help="Default unit, also used for output")
+@click.option(
+    "--mat/--print", default=False, help="PRINT_DIMS are mat/print size, default print"
+)
+@click.option(
+    "--paper",
+    default="0x0",
+    help="Dims of the paper of the print, assumed to be centered",
+)
+@click.option(
+    "--overlap",
+    default="0",
+    help="Overlap of mat's window over the print (pair or single)",
+)
+@click.option(
+    "--factor", default=None, help="Factor to use (mat area = factor * window area)"
+)
+@click.option("--exp", default=None, help="Exponent to use for the factor")
+@click.option(
+    "--border", default=None, help="Use fixed border size of this value, compute bottom"
+)
 def main(print_dims, overlap, units, paper, factor, exp, mat, border=None):
     """Compute mat/window size so my prints look good.
 
@@ -266,19 +267,21 @@ def main(print_dims, overlap, units, paper, factor, exp, mat, border=None):
     If Ow = Oh = 0, the window's size equals the print's size
 
     """
-    default_units = units if units in POSSIBLE_UNITS else 'mm'
+    default_units = units if units in POSSIBLE_UNITS else "mm"
     if units and units not in POSSIBLE_UNITS:
         click.echo(
-            "ERROR: Unknown units, {!r}, defaulting to mm"
-            .format(units), err=True)
+            "ERROR: Unknown units, {!r}, defaulting to mm".format(units), err=True
+        )
 
-    overlap_dims = parse_dim_pair(overlap, default_units=default_units, allow_single=True)
+    overlap_dims = parse_dim_pair(
+        overlap, default_units=default_units, allow_single=True
+    )
     print_dims = parse_dim_pair(print_dims, default_units=default_units)
     paper_dims = parse_dim_pair(paper, default_units=default_units)
-    if not factor or factor in ('phi', 'gold', 'golden', 'golden-ratio'):
+    if not factor or factor in ("phi", "gold", "golden", "golden-ratio"):
         factor = PHI
         if not exp:
-            exp = '1.5'
+            exp = "1.5"
     else:
         factor = mp.mpf(factor)
     if exp:
@@ -294,14 +297,14 @@ def main(print_dims, overlap, units, paper, factor, exp, mat, border=None):
         mat_dims = print_dims
 
         if border_dim:
-            b, b_bottom = border_dim, compute_bottom_border(border_dim, mat_dims, mat=True)
+            b, b_bottom = (
+                border_dim,
+                compute_bottom_border(border_dim, mat_dims, mat=True),
+            )
         else:
             b, b_bottom = compute_border_sizes(mat_dims, factor, mat=True)
 
-        window_dims = (
-            mat_dims[0] - 2 * b,
-            mat_dims[1] - b - b_bottom,
-        )
+        window_dims = (mat_dims[0] - 2 * b, mat_dims[1] - b - b_bottom)
 
         print_dims = [dim[0] + dim[1] * 2 for dim in zip(window_dims, overlap_dims)]
 
@@ -310,14 +313,14 @@ def main(print_dims, overlap, units, paper, factor, exp, mat, border=None):
         window_dims = [dim[0] - dim[1] * 2 for dim in zip(print_dims, overlap_dims)]
 
         if border_dim:
-            b, b_bottom = border_dim, compute_bottom_border(border_dim, window_dims, mat=False)
+            b, b_bottom = (
+                border_dim,
+                compute_bottom_border(border_dim, window_dims, mat=False),
+            )
         else:
             b, b_bottom = compute_border_sizes(window_dims, factor, mat=False)
 
-        mat_dims = (
-            window_dims[0] + 2 * b,
-            window_dims[1] + b + b_bottom
-        )
+        mat_dims = (window_dims[0] + 2 * b, window_dims[1] + b + b_bottom)
 
     if paper_dims[0] < print_dims[0] or paper_dims[1] < print_dims[1]:
         paper_dims = [dim for dim in print_dims]
@@ -326,46 +329,46 @@ def main(print_dims, overlap, units, paper, factor, exp, mat, border=None):
 
     paper_shift = [b - dim[1] - dim[0] for dim in zip(paper_borders, overlap_dims)]
 
-    print('== Parameters ============================================')
+    print("== Parameters ============================================")
     print(
         "Print size        {print}\n"
         "Paper size        {paper}\n"
         "Window overlap    {overlap}\n"
-        "Mat window size * {win}"
-        .format(
+        "Mat window size * {win}".format(
             print=dim_pair_str(print_dims, units),
             paper=dim_pair_str(paper_dims, units),
             overlap=dim_pair_str(overlap_dims, units),
             win=dim_pair_str(window_dims, units),
-        ))
+        )
+    )
 
-    print('\n== Mat Information ========================================')
+    print("\n== Mat Information ========================================")
     print(
         "Mat size        * {mat}\n"
         "Window position\n"
         "  Top           * {top}\n"
         "  Bottom        * {bottom}\n"
-        "  Left / Right  * {lr}"
-        .format(
+        "  Left / Right  * {lr}".format(
             mat=dim_pair_str(mat_dims, units),
             top=dim_str(b, units),
             bottom=dim_str(b_bottom, units),
             lr=dim_str(b, units),
-        ))
+        )
+    )
 
-    print('\n== Paper position from sides of mat =======================')
+    print("\n== Paper position from sides of mat =======================")
     print(
         "  Top           * {top}\n"
         "  Bottom        * {bottom}\n"
         "  Left          * {left}\n"
-        "  Right         * {right}"
-        .format(
+        "  Right         * {right}".format(
             top=dim_str(paper_shift[1], units),
             bottom=dim_str(mat_dims[1] - paper_dims[1] - paper_shift[1], units),
             left=dim_str(paper_shift[0], units),
             right=dim_str(mat_dims[0] - paper_dims[0] - paper_shift[0], units),
-        ))
+        )
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
