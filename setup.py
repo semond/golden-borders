@@ -6,18 +6,24 @@
 
 """
 
+from os import path
 from setuptools import setup
+
+this_directory = path.abspath(path.dirname(__file__))
+with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
+    long_description = f.read()
 
 setup(
     name="golden-borders",
-    # version=version_from_git(),
-    author=u"Serge Émond",
+    python_requires=">=3.3",
+    author="Serge Émond",
     author_email="serge@sergeemond.com",
     zip_safe=True,
     packages=["golden_borders"],
-    url="https://bitbucket.org/greyw/golden-borders",
-    description="Compute the mat size and borders so the window is optically"
-    "and the area follows the golden ratio",
+    url="https://github.com/semond/golden-borders",
+    description="Optically center the window of a print by computing the mat/print sizes.",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: Console",
@@ -25,18 +31,18 @@ setup(
         "Topic :: Utilities",
     ],
     install_requires=["click", "mpmath"],
-    extras_requires={
+    extras_require={
         "dev": [
-            "flake8",
             "flake8",
             "flake8-docstrings",
             "flake8-import-order",
+            "flake8-bugbear",
             "black",
             "isort",
         ]
     },
-    version_format='{tag}.dev{commitcount}+{gitsha}',
-    setup_requires=['setuptools-git-version'],
+    version_format="{tag}.dev{commitcount}+{gitsha}",
+    setup_requires=["setuptools-git-version"],
     entry_points="""
     [console_scripts]
     golden-borders=golden_borders:main

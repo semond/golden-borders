@@ -1,17 +1,19 @@
 # Computing dimensions for a perfect print
 
+> Compute the mat dimensions and the borders of
+> a print so the window is optically centered
+> somewhat based on the golden ratio.
 
 ## The Purpose
 
-I like to print my photographs. I'm also too cheap to frame them, however
-I do “mat” them.
+I like to print my photographs. I'm also too cheap to frame them, however I do “mat” them.
 
 In case you don't know, normally a print is:
 
 1. printed
 2. a *mat* is cut, the mat is bigger than the print, and has a window through which you can see the print (that window can be bigger or smaller than the print)
 3. the print is mounted between the mat and a cardboard
-4. a window is put in *front* of the mat (the mat can draw attention to the print, but its main purpose is to put space between the print and the window so they don't touch)
+4. a window (glass or plastic) is put in *front* of the mat (the mat can draw attention to the print, but its main purpose is to put space between the print and the window so they don't touch)
 5. all that stuff is placed in the frame
 6. the frame is stuck on a wall.
 
@@ -27,7 +29,7 @@ And so this little piece of code does just that.. compute everything so I don't 
 
 ## Border sizes
 
-We find the "golden ratio" in many places, including in theories for choosing a mat size.
+We find the “golden ratio” in many places, including in theories for choosing a mat size.
 
 To choose the dimensions of a mat, some people multiply the width and the height of the print by the golden ratio. Some think it adds way too much border. And for landscapes.. this causes the top border to be smaller than the size borders.
 
@@ -42,13 +44,17 @@ See a [small document I made about this](https://bytebucket.org/greyw/golden-bor
 
 ## Installation
 
-    pip install golden-borders
+```console
+pip install golden-borders
+```
 
 ## Usage
 
 `golden-borders` takes these arguments:
 
-    golden-borders [OPTIONS] PRINT_DIMS
+```console
+golden-borders [OPTIONS] PRINT_DIMS
+```
 
 where `PRINT_DIMS` is a dimension pair representing either the size of the *mat*, or the size of the *print* (default = print).
 
@@ -75,6 +81,10 @@ The `OPTIONS` may be:
 `--exp TEXT`
 : This is the exponent of the factor. Simply a convenience for the golden ratio. The default is `1`, except for `factor = golden`, in which case it's `1.5`.
 
+
+# Miscellaneous
+
+The code is formatted using the [Black](https://github.com/ambv/black) code style.
 
 # License
 
